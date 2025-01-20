@@ -3,6 +3,7 @@ package com.example.chat.feature.auth.signin
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -35,9 +36,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.chat.R
+import com.example.chat.feature.signInGoogle.SignInStateGoogle
 
 @Composable
-fun SignInScreen(navController: NavController) {
+fun SignInScreen(navController: NavController,
+                 onSignInClick:()->Unit) {
+
+
 
     val viewModel: SignInViewModel = hiltViewModel()
     val uiState = viewModel.state.collectAsState()
@@ -63,6 +68,7 @@ fun SignInScreen(navController: NavController) {
             else -> {}
         }
     }
+
 
     Scaffold(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -109,6 +115,12 @@ fun SignInScreen(navController: NavController) {
                     Text(text = "Don't have an account? Sign Up")
                 }
             }
+            Image(painter = painterResource(R.drawable.google),
+                contentDescription = "google",
+                modifier = Modifier.size(200.dp).
+                background(Color.White)
+                    .clickable { onSignInClick() }
+                )
         }
     }
 }
@@ -116,5 +128,5 @@ fun SignInScreen(navController: NavController) {
 @Preview(showBackground = true)
 @Composable
 fun PreviewSignInScreen() {
-    SignInScreen(navController = rememberNavController())
+    SignInScreen(navController = rememberNavController(), onSignInClick = {})
 }

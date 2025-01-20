@@ -5,6 +5,5 @@ import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
 class ChatApp: Application() {
-    //for dagger
-    //for dagger 2
+
 }

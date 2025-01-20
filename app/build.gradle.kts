@@ -97,6 +97,14 @@ dependencies {
 // Firebase Storage (File Storage)
     implementation("com.google.firebase:firebase-storage-ktx")
 
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+    implementation(libs.play.services.auth)
+    implementation(libs.androidx.navigation.compose)
+
+
+
 
 
 }
