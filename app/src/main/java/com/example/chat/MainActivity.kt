@@ -1,6 +1,8 @@
 package com.example.chat
 
+import android.Manifest
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -19,6 +21,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -36,12 +39,27 @@ import com.example.chat.feature.signInGoogle.SignInGoogleViewModel
 import com.example.chat.ui.theme.ChatTheme
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
+import com.permissionx.guolindev.PermissionX
+import com.zegocloud.uikit.internal.ZegoUIKitLanguage
+import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallService
+import com.zegocloud.uikit.prebuilt.call.core.invite.ZegoCallInvitationData
+import com.zegocloud.uikit.prebuilt.call.event.CallEndListener
+import com.zegocloud.uikit.prebuilt.call.event.ErrorEventsListener
+import com.zegocloud.uikit.prebuilt.call.event.SignalPluginConnectListener
+import com.zegocloud.uikit.prebuilt.call.event.ZegoCallEndReason
+import com.zegocloud.uikit.prebuilt.call.invite.ZegoUIKitPrebuiltCallInvitationConfig
+import com.zegocloud.uikit.prebuilt.call.invite.internal.ZegoTranslationText
+import com.zegocloud.uikit.prebuilt.call.invite.internal.ZegoUIKitPrebuiltCallConfigProvider
 import dagger.hilt.android.AndroidEntryPoint
+import im.zego.zim.enums.ZIMConnectionEvent
+import im.zego.zim.enums.ZIMConnectionState
 import kotlinx.coroutines.launch
+import org.json.JSONObject
+import timber.log.Timber
 
 
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class MainActivity : FragmentActivity() {
 
     private val googleAuthUiClient by lazy {
         GoogleAuthUiClient(
@@ -131,18 +149,64 @@ class MainActivity : ComponentActivity() {
                         composable("home") {
                             HomeScreen(navController)
                         }
-                        composable("chat/{channelId}", arguments = listOf(
+                        composable("chat/{channelId}&{channelName}", arguments = listOf(
                             navArgument("channelId") {
                                 type = NavType.StringType
+                            },
+                            navArgument("channelName") {
+                                type = NavType.StringType
                             }
-                        )){
-                            val channelId = it.arguments?.getString("channelId")?:""
-                            ChatScreen(navController,channelId)
+                        )) {
+                            val channelId = it.arguments?.getString("channelId") ?: ""
+                            val channelName = it.arguments?.getString("channelName") ?: ""
+                            ChatScreen(navController, channelId,channelName)
                         }
+
                     }
                 }
             }
         }
+        permissionHandling(this)
+    }
+
+    fun initZegoService(appID: Long, appSign: String, userID: String, userName: String) {
+        // Initialize Zego service
+        val callInvitationConfig = ZegoUIKitPrebuiltCallInvitationConfig()
+        callInvitationConfig.translationText = ZegoTranslationText(ZegoUIKitLanguage.ENGLISH)
+        callInvitationConfig.provider =
+            ZegoUIKitPrebuiltCallConfigProvider { invitationData: ZegoCallInvitationData? ->
+                ZegoUIKitPrebuiltCallInvitationConfig.generateDefaultConfig(
+                    invitationData
+                )
+            }
+        ZegoUIKitPrebuiltCallService.events.errorEventsListener =
+            ErrorEventsListener { errorCode: Int, message: String ->
+                Timber.d("onError() called with: errorCode = [$errorCode], message = [$message]")
+            }
+        ZegoUIKitPrebuiltCallService.events.invitationEvents.pluginConnectListener =
+            SignalPluginConnectListener { state: ZIMConnectionState, event: ZIMConnectionEvent, extendedData: JSONObject ->
+                Timber.d("onSignalPluginConnectionStateChanged() called with: state = [$state], event = [$event], extendedData = [$extendedData$]")
+            }
+        ZegoUIKitPrebuiltCallService.init(
+            application, appID, appSign, userID, userName, callInvitationConfig
+        )
+        ZegoUIKitPrebuiltCallService.enableFCMPush()
+
+        ZegoUIKitPrebuiltCallService.events.callEvents.callEndListener =
+            CallEndListener { callEndReason: ZegoCallEndReason?, jsonObject: String? ->
+                Log.d(
+                    "CallEndListener",
+                    "Call Ended with reason: $callEndReason and json: $jsonObject"
+                )
+            }
+    }
+
+    private fun permissionHandling(activityContext: FragmentActivity) {
+        PermissionX.init(activityContext).permissions(Manifest.permission.SYSTEM_ALERT_WINDOW)
+            .onExplainRequestReason { scope, deniedList ->
+                val message =
+                    "We need your consent for the following permissions in order to use the offline call function properly"
+                scope.showRequestReasonDialog(deniedList, message, "Allow", "Deny")
+            }.request { allGranted, grantedList, deniedList -> }
     }
 }
-
