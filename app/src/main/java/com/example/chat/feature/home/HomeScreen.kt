@@ -1,5 +1,6 @@
 package com.example.chat.feature.home
 
+import android.util.Log
 import androidx.compose.foundation.background
 
 import androidx.compose.foundation.clickable
@@ -149,6 +150,8 @@ fun HomeScreen(navController: NavController) {
         ModalBottomSheet(onDismissRequest = { addChannel.value = false }, sheetState = sheetState) {
             AddChannelDialog {
                 viewModel.addChannel(it)
+                Log.d("addHome", "sucess")
+
                 addChannel.value = false
             }
         }

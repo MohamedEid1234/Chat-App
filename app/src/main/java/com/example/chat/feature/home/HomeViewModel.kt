@@ -1,5 +1,6 @@
 package com.example.chat.feature.home
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.example.chat.model.Channel
 import com.google.firebase.Firebase
@@ -9,9 +10,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 
-
 @HiltViewModel
-class HomeViewModel @Inject constructor():ViewModel()  {
+class HomeViewModel @Inject constructor() : ViewModel() {
+
     private val firebaseDatabase = Firebase.database
     private val _channels = MutableStateFlow<List<Channel>>(emptyList())
     val channels = _channels.asStateFlow()
@@ -29,6 +30,8 @@ class HomeViewModel @Inject constructor():ViewModel()  {
             }
             _channels.value = list
         }
+        Log.d("get", "sucess")
+
     }
 
     fun addChannel(name: String) {
@@ -36,6 +39,9 @@ class HomeViewModel @Inject constructor():ViewModel()  {
         firebaseDatabase.getReference("channel").child(key!!).setValue(name).addOnSuccessListener {
             getChannels()
         }
+        Log.d("add", "sucess")
     }
-
 }
+
+
+

@@ -6,7 +6,10 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
+import com.android.volley.toolbox.Volley
+import com.example.chat.R
 import com.example.chat.model.Message
+import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.Firebase
 import com.google.firebase.auth.auth
 import com.google.firebase.database.DataSnapshot
@@ -22,11 +25,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.util.UUID
 import javax.inject.Inject
-import com.android.volley.toolbox.Volley
-import com.google.auth.oauth2.GoogleCredentials
-import com.example.chat.R
-
-
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(@ApplicationContext val context: Context) : ViewModel() {
@@ -147,7 +145,7 @@ class ChatViewModel @Inject constructor(@ApplicationContext val context: Context
         senderName: String,
         messageContent: String
     ) {
-        val fcmUrl = "https://fcm.googleapis.com/v1/projects/chatter-bbd0d/messages:send"
+        val fcmUrl = "https://fcm.googleapis.com/v1/projects/chat-2a0f0/messages:send"
         val jsonBody = JSONObject().apply {
             put("message", JSONObject().apply {
                 put("topic", "group_$channelID")
