@@ -305,3 +305,10 @@ fun ChatBubble(message: Message) {
 
     }
 }
+
+
+
+
+
+
+

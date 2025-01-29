@@ -1,5 +1,6 @@
 package com.example.chat.feature.home
 
+import android.app.Application
 import android.util.Log
 import androidx.compose.foundation.background
 
@@ -62,8 +63,10 @@ fun HomeScreen(navController: NavController) {
             context.initZegoService(
                 appID = AppID,
                 appSign = AppSign,
-                userID = it.email!!,
-                userName = it.email!!
+                userID = Firebase.auth.currentUser?.email ?: "defaultUser",
+                userName = Firebase.auth.currentUser?.displayName ?: "defaultUser",
+                application = (context.applicationContext as Application)
+
             )
         }
     }

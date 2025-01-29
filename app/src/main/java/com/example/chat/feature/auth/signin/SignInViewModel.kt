@@ -1,3 +1,5 @@
+
+
 package com.example.chat.feature.auth.signin
 
 import androidx.lifecycle.ViewModel
@@ -38,3 +40,4 @@ sealed class SignInState {
     object Success : SignInState()
     object Error : SignInState()
 }
+

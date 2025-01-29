@@ -5,6 +5,8 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
     id("com.google.gms.google-services")
+    kotlin("plugin.serialization") version "2.0.21"
+
 }
 
 android {
@@ -110,11 +112,35 @@ dependencies {
     implementation("com.google.firebase:firebase-storage-ktx")
 
     //fmc
-    implementation ("com.google.firebase:firebase-messaging")
+    implementation ("com.google.firebase:firebase-messaging:23.2.0")
     implementation ("com.google.auth:google-auth-library-oauth2-http:1.19.0")
 
-    implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:+")
+    //zego
+    implementation("com.github.ZEGOCLOUD:zego_uikit_prebuilt_call_android:3.9.1")
     implementation("com.guolindev.permissionx:permissionx:1.8.0")
+
+// Supabase K
+
+    implementation(platform("io.github.jan-tennert.supabase:bom:3.1.0-beta-2"))
+    //database
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:realtime-kt")
+    //storage
+    implementation("io.github.jan-tennert.supabase:storage-kt:1.3.2")
+    //auth
+    implementation("io.github.jan-tennert.supabase:gotrue-kt:2.7.0-beta-1")
+    //compose auth (google githup)
+    implementation("io.github.jan-tennert.supabase:compose-auth:1.3.2")
+    implementation("io.github.jan-tennert.supabase:compose-auth-ui:1.3.2")
+
+    // Coil
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+
+
+    // Ktor Client Engine (for Android)
+    implementation("io.ktor:ktor-client-android:3.0.3")
+
 
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
@@ -124,6 +150,9 @@ dependencies {
 
     implementation(libs.material)
 
+   /* implementation ("com.zegocloud.uikit:call:1.3.7") // Example version, check for the latest version in Zego's documentation
+    implementation ("com.zegocloud:uikit:zego-uikit-sdk:2.0.0" ) // Check the latest version on the official repo
+*/
 
 
 

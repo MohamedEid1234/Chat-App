@@ -17,14 +17,28 @@ import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.database
 import com.google.firebase.messaging.FirebaseMessaging
-import com.google.firebase.storage.storage
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import io.github.jan.supabase.createSupabaseClient
+import io.github.jan.supabase.gotrue.Auth
+import io.github.jan.supabase.gotrue.auth
+import io.github.jan.supabase.postgrest.Postgrest
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.storage.BucketApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import org.json.JSONObject
 import java.util.UUID
 import javax.inject.Inject
+import io.github.jan.supabase.storage.Storage
+import io.github.jan.supabase.storage.storage
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
+import kotlin.time.Duration.Companion.minutes
+
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(@ApplicationContext val context: Context) : ViewModel() {
@@ -33,6 +47,21 @@ class ChatViewModel @Inject constructor(@ApplicationContext val context: Context
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
     val message = _messages.asStateFlow()
     private val db = Firebase.database
+
+    // Supabase client initialization
+    val supabaseClient = createSupabaseClient(
+        supabaseUrl = "https://syiqosnnlnxukodesqdy.supabase.co",
+        supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5aXFvc25ubG54dWtvZGVzcWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1OTQzMDUsImV4cCI6MjA1MzE3MDMwNX0.TvoEotd3gPfAuYw7wyn0TVcaApSAa4e9iIdq7RFeWwI"
+    ) {
+        install(Postgrest)//database
+        install(Storage)//Storage
+        install(Auth) //Auth
+    }
+
+
+
+
+
 
     fun sendMessage(channelID: String, messageText: String?, image: String? = null) {
         val message = Message(
@@ -53,23 +82,61 @@ class ChatViewModel @Inject constructor(@ApplicationContext val context: Context
             }
     }
 
-    fun sendImageMessage(uri: Uri, channelID: String) {
-        val imageRef = Firebase.storage.reference.child("images/${UUID.randomUUID()}")
-        imageRef.putFile(uri).continueWithTask { task ->
-            if (!task.isSuccessful) {
-                task.exception?.let {
-                    throw it
-                }
-            }
-            imageRef.downloadUrl
-        }.addOnCompleteListener { task ->
-            val currentUser = Firebase.auth.currentUser
-            if (task.isSuccessful) {
-                val downloadUri = task.result
-                sendMessage(channelID, null, downloadUri.toString())
+
+    fun uploadImageToSupabase(
+        uri: Uri,
+        fileName: String,
+        onSuccess: (String) -> Unit,
+        onError: (String) -> Unit
+    ) {
+        val storage = supabaseClient.storage
+        val bucket: BucketApi = storage["Images"] // Specify your bucket name here
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val byteArray = context.contentResolver.openInputStream(uri)?.readBytes()
+                    ?: throw Exception("Failed to read file")
+
+                // Upload the file with metadata
+                bucket.upload(
+                    fileName,
+                    byteArray
+                )
+                Log.d("ChatViewModel", "File uploaded successfully: $fileName")
+
+
+// Get the public URL of the uploaded file
+                val fileUrl = bucket.publicUrl(fileName)
+
+
+
+               /* val fileUrl = bucket.createSignedUrl(fileName, expiresIn = 7.days)*/
+                Log.d("ChatViewModel", "Generated Signed URL: $fileUrl")
+
+                onSuccess(fileUrl)
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Failed to upload image: ${e.message}", e)
+                onError(e.message ?: "Unknown error")
             }
         }
     }
+
+
+    fun sendImageMessage(uri: Uri, channelID: String) {
+        val fileName = "image_${System.currentTimeMillis()}.jpg"
+
+        uploadImageToSupabase(uri, fileName,
+            onSuccess = { fileUrl ->
+                sendMessage(channelID, messageText = null, image = fileUrl)
+                Log.d("ChatViewModel", "Generated Image URL: $fileUrl")
+
+            },
+            onError = { error ->
+                Log.e("ChatViewModel", "Image upload failed: $error")
+            }
+        )
+    }
+
 
     fun listenForMessages(channelID: String) {
         db.getReference("messages").child(channelID).orderByChild("createdAt")
@@ -179,10 +246,21 @@ class ChatViewModel @Inject constructor(@ApplicationContext val context: Context
     }
 
     private fun getAccessToken(): String {
-        val inputStream = context.resources.openRawResource(R.raw.chatter_key)
-        val googleCreds = GoogleCredentials.fromStream(inputStream)
-            .createScoped(listOf("https://www.googleapis.com/auth/firebase.messaging"))
-        return googleCreds.refreshAccessToken().tokenValue
+        return try {
+            val inputStream = context.resources.openRawResource(R.raw.chatter_key)
+            val googleCreds = GoogleCredentials.fromStream(inputStream)
+                .createScoped(listOf("https://www.googleapis.com/auth/firebase.messaging"))
+            googleCreds.refreshAccessToken().tokenValue
+        } catch (e: Exception) {
+            Log.e("ChatViewModel", "Failed to get access token", e)
+            ""
+        }
     }
 
+
 }
+
+
+
+
+

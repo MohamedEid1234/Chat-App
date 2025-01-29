@@ -1,6 +1,7 @@
 package com.example.chat
 
 import android.Manifest
+import android.app.Application
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -40,6 +41,7 @@ import com.example.chat.ui.theme.ChatTheme
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.firebase.auth.FirebaseAuth
 import com.permissionx.guolindev.PermissionX
+import com.zegocloud.uikit.ZegoUIKit
 import com.zegocloud.uikit.internal.ZegoUIKitLanguage
 import com.zegocloud.uikit.prebuilt.call.ZegoUIKitPrebuiltCallService
 import com.zegocloud.uikit.prebuilt.call.core.invite.ZegoCallInvitationData
@@ -169,37 +171,40 @@ class MainActivity : FragmentActivity() {
         permissionHandling(this)
     }
 
-    fun initZegoService(appID: Long, appSign: String, userID: String, userName: String) {
-        // Initialize Zego service
-        val callInvitationConfig = ZegoUIKitPrebuiltCallInvitationConfig()
-        callInvitationConfig.translationText = ZegoTranslationText(ZegoUIKitLanguage.ENGLISH)
-        callInvitationConfig.provider =
-            ZegoUIKitPrebuiltCallConfigProvider { invitationData: ZegoCallInvitationData? ->
-                ZegoUIKitPrebuiltCallInvitationConfig.generateDefaultConfig(
-                    invitationData
-                )
+
+
+    fun initZegoService(appID: Long, appSign: String, userID: String, userName: String, application: Application) {
+        // Set up call invitation service configuration
+        val callInvitationConfig = ZegoUIKitPrebuiltCallInvitationConfig().apply {
+            translationText = ZegoTranslationText(ZegoUIKitLanguage.ENGLISH)  // Set the UI language to English
+            provider = ZegoUIKitPrebuiltCallConfigProvider { invitationData: ZegoCallInvitationData? ->
+                ZegoUIKitPrebuiltCallInvitationConfig.generateDefaultConfig(invitationData)
             }
-        ZegoUIKitPrebuiltCallService.events.errorEventsListener =
-            ErrorEventsListener { errorCode: Int, message: String ->
-                Timber.d("onError() called with: errorCode = [$errorCode], message = [$message]")
-            }
-        ZegoUIKitPrebuiltCallService.events.invitationEvents.pluginConnectListener =
-            SignalPluginConnectListener { state: ZIMConnectionState, event: ZIMConnectionEvent, extendedData: JSONObject ->
-                Timber.d("onSignalPluginConnectionStateChanged() called with: state = [$state], event = [$event], extendedData = [$extendedData$]")
-            }
-        ZegoUIKitPrebuiltCallService.init(
-            application, appID, appSign, userID, userName, callInvitationConfig
-        )
+        }
+
+        // Initialize the Prebuilt Call Service with Zego credentials
+        ZegoUIKitPrebuiltCallService.init(application, appID, appSign, userID, userName, callInvitationConfig)
+
+        // Enable FCM push notifications for calls
         ZegoUIKitPrebuiltCallService.enableFCMPush()
 
+        // Set event listeners
+        ZegoUIKitPrebuiltCallService.events.errorEventsListener = ErrorEventsListener { errorCode, message ->
+            Log.d("ZegoError", "Error Code: $errorCode, Message: $message")
+        }
+        ZegoUIKitPrebuiltCallService.events.invitationEvents.pluginConnectListener =
+            SignalPluginConnectListener { state: ZIMConnectionState, event: ZIMConnectionEvent, extendedData: JSONObject ->
+                Log.d("ZegoSignalState", "State: $state, Event: $event, Data: $extendedData")
+            }
+
+        // Call end listener to handle call end events
         ZegoUIKitPrebuiltCallService.events.callEvents.callEndListener =
-            CallEndListener { callEndReason: ZegoCallEndReason?, jsonObject: String? ->
-                Log.d(
-                    "CallEndListener",
-                    "Call Ended with reason: $callEndReason and json: $jsonObject"
-                )
+            CallEndListener { callEndReason, jsonObject ->
+                Log.d("CallEndListener", "Call Ended with reason: $callEndReason and json: $jsonObject")
             }
     }
+
+
 
     private fun permissionHandling(activityContext: FragmentActivity) {
         PermissionX.init(activityContext).permissions(Manifest.permission.SYSTEM_ALERT_WINDOW)
