@@ -50,8 +50,8 @@ class ChatViewModel @Inject constructor(@ApplicationContext val context: Context
 
     // Supabase client initialization
     val supabaseClient = createSupabaseClient(
-        supabaseUrl = "https://syiqosnnlnxukodesqdy.supabase.co",
-        supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InN5aXFvc25ubG54dWtvZGVzcWR5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mzc1OTQzMDUsImV4cCI6MjA1MzE3MDMwNX0.TvoEotd3gPfAuYw7wyn0TVcaApSAa4e9iIdq7RFeWwI"
+        supabaseUrl = "**********",
+        supabaseKey = "*************"
     ) {
         install(Postgrest)//database
         install(Storage)//Storage
